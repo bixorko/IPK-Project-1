@@ -1,7 +1,2 @@
-www.fit.vutbr.cz:A
-www.google.com:A
-www.seznam.cz:A
-147.229.14.131:PTR
-ihned.cz:A
-ihned.cz:A
-www.seznam.cz:A
+www.kokotina.czek:AB
+www.picovina.skek:A
