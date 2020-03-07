@@ -1,6 +1,7 @@
 from socketserver import TCPServer as tcps
 from socketserver import BaseRequestHandler as handler
 import re
+import sys
 import socket
 import urllib.request, urllib.error
 from urllib.parse import urlparse
@@ -11,17 +12,17 @@ def editRequestedString(string):
     toarray = edited.split()
     if toarray[0] == 'GET':
         msg, codeandmsg = checkForRequestGET(toarray)
-        return msg, codeandmsg.encode()
+        return msg, codeandmsg.encode(), (toarray[2] + " ").encode()
     elif toarray[0] == 'POST':
-        msg, codeandmsg = checkForRequestPOST(toarray)
-        return msg, codeandmsg.encode()
+        toarray2 = edited.split("\r\n\r\n", 1)[1].replace(" ", "").split()
+        msg, codeandmsg = checkForRequestPOST(toarray2)
+        return msg, codeandmsg.encode(), (toarray[2] + " ").encode()
     else:
-        # Method Not Allowed
-        return ''.encode(), '405 Method Not Allowed\r\n'.encode()
+        return ''.encode(), '405 Method Not Allowed\r\n'.encode(), ''.encode()
 
 
 def checkForRequestPOST(toarray):
-    newArray = toarray[13:]
+    newArray = toarray
     toappend = ''
     error = ''
     for item in newArray:
@@ -31,7 +32,8 @@ def checkForRequestPOST(toarray):
             if ip != '':
                 toappend += ip.decode()
             else:
-                error = "404 Not Found\r\n"
+                if error == '':
+                    error = "404 Not Found"
                 if item == newArray[-1] and toappend == '':
                     return ''.encode(), error + "\r\n"
         elif re.match(r"^\s*\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\s*:\s*PTR\s*$", item):
@@ -40,12 +42,12 @@ def checkForRequestPOST(toarray):
             if ip != '':
                 toappend += ip.decode()
             else:
-                error = "404 Not Found\r\n"
+                if error == '':
+                    error = "404 Not Found"
                 if item == newArray[-1] and toappend == '':
                     return ''.encode(), error + "\r\n"
         else:
-            if error == '':
-                error = '400 Bad Request\r\n'
+            error = '400 Bad Request'
             if item == newArray[-1] and toappend == '':
                 return ''.encode(), error + "\r\n"
             pass
@@ -56,8 +58,6 @@ def checkForRequestPOST(toarray):
 def checkForPostIP(ip):
     try:
         getIP = socket.gethostbyaddr(ip)
-        print(ip)
-        print(getIP)
         getIP = ip + ':PTR=' + getIP[0] + "\r\n"
         return str.encode(getIP)
     except socket.error:
@@ -114,21 +114,31 @@ def controlURL(string):
 class HandleTCP(handler):
     def handle(self):
         self.data = self.request.recv(8192).strip()
-        msg, codemsg = editRequestedString(self.data)
+        msg, codemsg, head = editRequestedString(self.data)
         if msg.decode() == '':
-            self.request.sendall('HTTP/1.1 '.encode() + codemsg)
+            self.request.sendall(head + codemsg)
+            self.request.close()
         else:
-            self.request.sendall('HTTP/1.1 '.encode() + codemsg + '\r\n\r\n'.encode() + msg)
+            self.request.sendall(head + codemsg + '\r\n\r\n'.encode() + msg)
+            self.request.close()
 
 
 def StartServer():
-    host, port = "localhost", 8080
+    port = int(parseArgs())
     print("starting server on port {}!".format(port))
-    with tcps((host, port), HandleTCP) as server:
+    with tcps(("localhost", port), HandleTCP) as server:
         try:
             server.serve_forever()
         except KeyboardInterrupt:
             server.shutdown()
+
+
+def parseArgs():
+    if 0 <= int(sys.argv[1]) <= 65535:
+        return sys.argv[1]
+    else:
+        sys.stderr.write('BAD PORT!\n')
+        exit(1)
 
 
 #################################
