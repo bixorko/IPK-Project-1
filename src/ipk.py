@@ -132,6 +132,7 @@ def StartServer():
             server.serve_forever()
         except KeyboardInterrupt:
             server.shutdown()
+            server.server_close()
 
 
 def parseArgs():
