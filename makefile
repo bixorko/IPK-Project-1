@@ -1,6 +1,5 @@
 build:
 	
 run:
-	@python3 ipk.py $(PORT)
-
+	@python3 ./src/ipk.py $(PORT)
 
