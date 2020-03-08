@@ -14,6 +14,8 @@ def editRequestedString(string):
         msg, codeandmsg = checkForRequestGET(toarray)
         return msg, codeandmsg.encode(), (toarray[2] + " ").encode()
     elif toarray[0] == 'POST':
+        if toarray[1] != '/dns-query':
+            return ''.encode(), '400 Bad Request\r\n\r\n'.encode(), (toarray[2] + " ").encode()
         toarray2 = ''
         try:
             toarray2 = edited.split("\r\n\r\n", 1)[1].replace(" ", "").split()
@@ -30,16 +32,22 @@ def checkForRequestPOST(toarray):
     toappend = ''
     error = ''
     for item in newArray:
-        if re.match(r"^\s*\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\s*:\s*PTR\s*$", item):
-            cutted = item.split(':', 1)[0]
-            ip = checkForPostIP(cutted)
-            if ip != '':
-                toappend += ip.decode()
+        if re.match(r"^\s*\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\s*:\s*(PTR|A)\s*$", item):
+            if re.match(r"^\s*(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\s*:\s*PTR\s*$", item):
+                cutted = item.split(':', 1)[0]
+                ip = checkForPostIP(cutted)
+                if ip != '':
+                    toappend += ip.decode()
+                else:
+                    if error == '':
+                        error = "404 Not Found"
+                    if item == newArray[-1] and toappend == '':
+                        return ''.encode(), error + "\r\n\r\n"
             else:
-                if error == '':
-                    error = "404 Not Found"
+                error = '400 Bad Request'
                 if item == newArray[-1] and toappend == '':
                     return ''.encode(), error + "\r\n\r\n"
+                pass
         elif re.match(r"^\s*(\S)*\s*:\s*A\s*$", item):
             cutted = item.split(':', 1)[0]
             ip = findIP(cutted)
