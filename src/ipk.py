@@ -14,11 +14,15 @@ def editRequestedString(string):
         msg, codeandmsg = checkForRequestGET(toarray)
         return msg, codeandmsg.encode(), (toarray[2] + " ").encode()
     elif toarray[0] == 'POST':
-        toarray2 = edited.split("\r\n\r\n", 1)[1].replace(" ", "").split()
+        toarray2 = ''
+        try:
+            toarray2 = edited.split("\r\n\r\n", 1)[1].replace(" ", "").split()
+        except:
+            return ''.encode(), '400 Bad Request\r\n\r\n'.encode(), (toarray[2] + " ").encode()
         msg, codeandmsg = checkForRequestPOST(toarray2)
         return msg, codeandmsg.encode(), (toarray[2] + " ").encode()
     else:
-        return ''.encode(), '405 Method Not Allowed\r\n'.encode(), ''.encode()
+        return ''.encode(), '405 Method Not Allowed\r\n\r\n'.encode(), (toarray[2] + " ").encode()
 
 
 def checkForRequestPOST(toarray):
@@ -35,7 +39,7 @@ def checkForRequestPOST(toarray):
                 if error == '':
                     error = "404 Not Found"
                 if item == newArray[-1] and toappend == '':
-                    return ''.encode(), error + "\r\n"
+                    return ''.encode(), error + "\r\n\r\n"
         elif re.match(r"^\s*(\S)*\s*:\s*A\s*$", item):
             cutted = item.split(':', 1)[0]
             ip = findIP(cutted)
@@ -45,11 +49,11 @@ def checkForRequestPOST(toarray):
                 if error == '':
                     error = "404 Not Found"
                 if item == newArray[-1] and toappend == '':
-                    return ''.encode(), error + "\r\n"
+                    return ''.encode(), error + "\r\n\r\n"
         else:
             error = '400 Bad Request'
             if item == newArray[-1] and toappend == '':
-                return ''.encode(), error + "\r\n"
+                return ''.encode(), error + "\r\n\r\n"
             pass
 
     return toappend.encode(), '200 OK'
@@ -71,10 +75,10 @@ def checkForRequestGET(toarray):
         if ip != '':
             return ip, '200 OK'
         else:
-            return ''.encode(), "404 Not Found\r\n"
+            return ''.encode(), "404 Not Found\r\n\r\n"
     else:
         # BAD REQUEST
-        return ''.encode(), '400 Bad Request\r\n'
+        return ''.encode(), '400 Bad Request\r\n\r\n'
 
 
 def findIP(string):
@@ -99,9 +103,9 @@ def controlURL(string):
     try:
         urllib.request.urlopen(url)
     except urllib.error.HTTPError as e:
-        return "404 Not Found\r\n"
+        return "404 Not Found\r\n\r\n"
     except urllib.error.URLError as e:
-        return "404 Not Found\r\n"
+        return "404 Not Found\r\n\r\n"
     else:
         return 200
 
